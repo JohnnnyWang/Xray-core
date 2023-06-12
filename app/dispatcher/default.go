@@ -226,7 +226,7 @@ func (d *DefaultDispatcher) getLink(ctx context.Context, network net.Network, sn
 	if user != nil && len(user.Email) > 0 {
 		p := d.policy.ForLevel(user.Level)
 		if p.Stats.UserUplink {
-			name := "user>>>" + user.Email + ">>>traffic>>>uplink"
+			name := "yez>>>user>>>" + user.Email + ">>>uplink"
 			if c, _ := stats.GetOrRegisterCounter(d.stats, name); c != nil {
 				inboundLink.Writer = &SizeStatWriter{
 					Counter: c,
@@ -235,7 +235,7 @@ func (d *DefaultDispatcher) getLink(ctx context.Context, network net.Network, sn
 			}
 		}
 		if p.Stats.UserDownlink {
-			name := "user>>>" + user.Email + ">>>traffic>>>downlink"
+			name := "yez>>>user>>>" + user.Email + ">>>downlink"
 			if c, _ := stats.GetOrRegisterCounter(d.stats, name); c != nil {
 				outboundLink.Writer = &SizeStatWriter{
 					Counter: c,

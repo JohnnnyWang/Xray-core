@@ -71,7 +71,7 @@
       "streamSettings": {
         "network": "tcp"
       },
-      "tag": "6001"
+      "tag": "yez_vmess"
     }
   ],
   "outbounds": [
