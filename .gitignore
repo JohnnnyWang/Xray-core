@@ -19,6 +19,7 @@
 *.zip
 *.tar.gz
 xray
+yez_xray
 mockgen
 vprotogen
 !infra/vprotogen/

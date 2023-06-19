@@ -7,6 +7,6 @@ xray:
 	set GOOS=$(GOOS_LINUX)
 	set GOARCH=$(GOARCH)
 	set CGO_ENABLED=$(CGO_ENABLED)
-	go build -o xray -trimpath -ldflags "-s -w -buildid=" ./main
+	go build -o yez_xray -trimpath -ldflags "-s -w -buildid=" ./main
 	set GOOS=$(GOOS_WINDOWS)
-	go build -o xray_windows_amd64.exe -trimpath -ldflags "-s -w -buildid=" ./main
+	go build -o yez_xray_windows_amd64.exe -trimpath -ldflags "-s -w -buildid=" ./main
