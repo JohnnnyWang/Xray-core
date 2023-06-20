@@ -4,6 +4,7 @@ GOARCH = amd64
 CGO_ENABLED = 0
 
 xray:
+	go clean -i -x
 	set GOOS=$(GOOS_LINUX)
 	set GOARCH=$(GOARCH)
 	set CGO_ENABLED=$(CGO_ENABLED)
