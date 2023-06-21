@@ -225,10 +225,10 @@ func (d *DefaultDispatcher) getLink(ctx context.Context, network net.Network, sn
 
 	if user != nil && len(user.Email) > 0 {
 		p := d.policy.ForLevel(user.Level)
-		oneMB := int64(1024 * 1024 / 5)
+		oneMB := int64(1024 * 1024 * 2)
 		bm := BucketMange()
-		speedLimit := int64((user.Level + 1) * 2)
-		bucket := bm.GetUserBucket(user, oneMB*speedLimit)
+		// speedLimit := int64((user.Level + 1) * 2)
+		bucket := bm.GetUserBucket(user, oneMB*22)
 		logg := session.ExportIDToError(ctx)
 		inboundLink.Writer = RateWriter(inboundLink.Writer, bucket, logg)
 		outboundLink.Writer = RateWriter(outboundLink.Writer, bucket, logg)

@@ -1,7 +1,7 @@
-GOOS_LINUX = linux
-GOOS_WINDOWS = windows
-GOARCH = amd64
-CGO_ENABLED = 0
+GOOS_LINUX=linux
+GOOS_WINDOWS=windows
+GOARCH=amd64
+CGO_ENABLED=0
 
 xray:
 	go clean -i -x
