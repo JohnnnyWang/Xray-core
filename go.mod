@@ -41,6 +41,7 @@ require (
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/google/btree v1.1.2 // indirect
 	github.com/google/pprof v0.0.0-20230821062121-407c9e7a662f // indirect
+  github.com/juju/ratelimit v1.0.2
 	github.com/klauspost/compress v1.16.7 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.5 // indirect
 	github.com/onsi/ginkgo/v2 v2.12.0 // indirect

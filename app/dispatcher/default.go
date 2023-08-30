@@ -157,19 +157,28 @@ func (d *DefaultDispatcher) getLink(ctx context.Context) (*transport.Link, *tran
 
 	if user != nil && len(user.Email) > 0 {
 		p := d.policy.ForLevel(user.Level)
+		oneMB := int64(1024 * 1024 * 2)
+		bm := BucketMange()
+		// speedLimit := int64((user.Level + 1) * 2)
+		bucket := bm.GetUserBucket(user, oneMB*22)
+		logg := session.ExportIDToError(ctx)
+		inboundLink.Writer = RateWriter(inboundLink.Writer, bucket, logg)
+		outboundLink.Writer = RateWriter(outboundLink.Writer, bucket, logg)
 		if p.Stats.UserUplink {
-			name := "user>>>" + user.Email + ">>>traffic>>>uplink"
+			name := "yez>>>user>>>" + user.Email + ">>>uplink"
 			if c, _ := stats.GetOrRegisterCounter(d.stats, name); c != nil {
 				inboundLink.Writer = &SizeStatWriter{
+					Limter:  bucket,
 					Counter: c,
 					Writer:  inboundLink.Writer,
 				}
 			}
 		}
 		if p.Stats.UserDownlink {
-			name := "user>>>" + user.Email + ">>>traffic>>>downlink"
+			name := "yez>>>user>>>" + user.Email + ">>>downlink"
 			if c, _ := stats.GetOrRegisterCounter(d.stats, name); c != nil {
 				outboundLink.Writer = &SizeStatWriter{
+					Limter:  bucket,
 					Counter: c,
 					Writer:  outboundLink.Writer,
 				}
