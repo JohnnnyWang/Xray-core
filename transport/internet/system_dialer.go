@@ -16,6 +16,7 @@ var effectiveSystemDialer SystemDialer = &DefaultSystemDialer{}
 
 type SystemDialer interface {
 	Dial(ctx context.Context, source net.Address, destination net.Destination, sockopt *SocketConfig) (net.Conn, error)
+	DestIpAddress() net.IP
 }
 
 type DefaultSystemDialer struct {
@@ -65,6 +66,17 @@ func (d *DefaultSystemDialer) Dial(ctx context.Context, src net.Address, dest ne
 		if err != nil {
 			return nil, err
 		}
+		if sockopt != nil {
+			sys, err := packetConn.(*net.UDPConn).SyscallConn()
+			if err != nil {
+				return nil, err
+			}
+			sys.Control(func(fd uintptr) {
+				if err := applyOutboundSocketOptions("udp", dest.NetAddr(), fd, sockopt); err != nil {
+					newError("failed to apply socket options").Base(err).WriteToLog(session.ExportIDToError(ctx))
+				}
+			})
+		}
 		return &PacketConnWrapper{
 			Conn: packetConn,
 			Dest: destAddr,
@@ -81,6 +93,9 @@ func (d *DefaultSystemDialer) Dial(ctx context.Context, src net.Address, dest ne
 	}
 
 	if sockopt != nil || len(d.controllers) > 0 {
+		if sockopt != nil && sockopt.TcpMptcp {
+			dialer.SetMultipathTCP(true)
+		}
 		dialer.Control = func(network, address string, c syscall.RawConn) error {
 			for _, ctl := range d.controllers {
 				if err := ctl(network, address, c); err != nil {
@@ -103,6 +118,10 @@ func (d *DefaultSystemDialer) Dial(ctx context.Context, src net.Address, dest ne
 	}
 
 	return dialer.DialContext(ctx, dest.Network.SystemString(), dest.NetAddr())
+}
+
+func (d *DefaultSystemDialer) DestIpAddress() net.IP {
+	return nil
 }
 
 type PacketConnWrapper struct {
@@ -167,6 +186,10 @@ func WithAdapter(dialer SystemDialerAdapter) SystemDialer {
 
 func (v *SimpleSystemDialer) Dial(ctx context.Context, src net.Address, dest net.Destination, sockopt *SocketConfig) (net.Conn, error) {
 	return v.adapter.Dial(dest.Network.SystemString(), dest.NetAddr())
+}
+
+func (d *SimpleSystemDialer) DestIpAddress() net.IP {
+	return nil
 }
 
 // UseAlternativeSystemDialer replaces the current system dialer with a given one.

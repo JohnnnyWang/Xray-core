@@ -73,6 +73,11 @@ func (c *Client) Process(ctx context.Context, link *transport.Link, dialer inter
 	if outbound == nil || !outbound.Target.IsValid() {
 		return newError("target not specified.")
 	}
+	outbound.Name = "http"
+	inbound := session.InboundFromContext(ctx)
+	if inbound != nil {
+		inbound.SetCanSpliceCopy(2)
+	}
 	target := outbound.Target
 	targetAddr := target.NetAddr()
 
@@ -303,7 +308,7 @@ func setUpHTTPTunnel(ctx context.Context, dest net.Destination, target string, u
 
 	nextProto := ""
 	if tlsConn, ok := iConn.(*tls.Conn); ok {
-		if err := tlsConn.Handshake(); err != nil {
+		if err := tlsConn.HandshakeContext(ctx); err != nil {
 			rawConn.Close()
 			return nil, err
 		}
