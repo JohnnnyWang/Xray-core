@@ -4,6 +4,7 @@ package dispatcher
 
 import (
 	"context"
+	"github.com/juju/ratelimit"
 	"strings"
 	"sync"
 	"time"
@@ -159,8 +160,14 @@ func (d *DefaultDispatcher) getLink(ctx context.Context) (*transport.Link, *tran
 		p := d.policy.ForLevel(user.Level)
 		oneMB := int64(1024 * 1024 * 2)
 		bm := BucketMange()
-		// speedLimit := int64((user.Level + 1) * 2)
-		bucket := bm.GetUserBucket(user, oneMB*22)
+		intUserLevel := int64(user.Level)
+		var bucket *ratelimit.Bucket
+
+		if intUserLevel > 3 {
+			bucket = bm.GetUserBucket(user, oneMB*9999)
+		} else {
+			bucket = bm.GetUserBucket(user, oneMB*10)
+		}
 		logg := session.ExportIDToError(ctx)
 		inboundLink.Writer = RateWriter(inboundLink.Writer, bucket, logg)
 		outboundLink.Writer = RateWriter(outboundLink.Writer, bucket, logg)
