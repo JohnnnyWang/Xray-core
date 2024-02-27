@@ -87,6 +87,7 @@ func (i *RelayInbound) Network() []net.Network {
 func (i *RelayInbound) Process(ctx context.Context, network net.Network, connection stat.Connection, dispatcher routing.Dispatcher) error {
 	inbound := session.InboundFromContext(ctx)
 	inbound.Name = "shadowsocks-2022-relay"
+	inbound.SetCanSpliceCopy(3)
 
 	var metadata M.Metadata
 	if inbound.Source.IsValid() {
@@ -108,13 +109,13 @@ func (i *RelayInbound) Process(ctx context.Context, network net.Network, connect
 			}
 			for _, buffer := range mb {
 				packet := B.As(buffer.Bytes()).ToOwned()
+				buffer.Release()
 				err = i.service.NewPacket(ctx, pc, packet, metadata)
 				if err != nil {
 					packet.Release()
 					buf.ReleaseMulti(mb)
 					return err
 				}
-				buffer.Release()
 			}
 		}
 	}

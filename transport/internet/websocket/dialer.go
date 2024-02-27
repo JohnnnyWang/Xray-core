@@ -4,16 +4,15 @@ import (
 	"context"
 	_ "embed"
 	"encoding/base64"
-	"fmt"
 	"io"
 	gonet "net"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/xtls/xray-core/common"
 	"github.com/xtls/xray-core/common/net"
+	"github.com/xtls/xray-core/common/platform"
 	"github.com/xtls/xray-core/common/session"
 	"github.com/xtls/xray-core/transport/internet"
 	"github.com/xtls/xray-core/transport/internet/stat"
@@ -26,14 +25,15 @@ var webpage []byte
 var conns chan *websocket.Conn
 
 func init() {
-	if addr := os.Getenv("XRAY_BROWSER_DIALER"); addr != "" {
+	addr := platform.NewEnvFlag(platform.BrowserDialerAddress).GetValue(func() string { return "" })
+	if addr != "" {
 		conns = make(chan *websocket.Conn, 256)
 		go http.ListenAndServe(addr, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if r.URL.Path == "/websocket" {
 				if conn, err := upgrader.Upgrade(w, r, nil); err == nil {
 					conns <- conn
 				} else {
-					fmt.Println("unexpected error")
+					newError("Browser dialer http upgrade unexpected error").AtError().WriteToLog()
 				}
 			} else {
 				w.Write(webpage)
@@ -96,7 +96,7 @@ func dialWebSocket(ctx context.Context, dest net.Destination, streamSettings *in
 				}
 				// TLS and apply the handshake
 				cn := tls.UClient(pconn, tlsConfig, fingerprint).(*tls.UConn)
-				if err := cn.WebsocketHandshake(); err != nil {
+				if err := cn.WebsocketHandshakeContext(ctx); err != nil {
 					newError("failed to dial to " + addr).Base(err).AtError().WriteToLog()
 					return nil, err
 				}
@@ -147,7 +147,7 @@ func dialWebSocket(ctx context.Context, dest net.Destination, streamSettings *in
 		header.Set("Sec-WebSocket-Protocol", base64.RawURLEncoding.EncodeToString(ed))
 	}
 
-	conn, resp, err := dialer.Dial(uri, header)
+	conn, resp, err := dialer.DialContext(ctx, uri, header)
 	if err != nil {
 		var reason string
 		if resp != nil {

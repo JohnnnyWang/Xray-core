@@ -142,14 +142,23 @@ func (s *clientConnections) openConnection(ctx context.Context, destAddr net.Add
 		KeepAlivePeriod:      0,
 		HandshakeIdleTimeout: time.Second * 8,
 		MaxIdleTimeout:       time.Second * 300,
-		Tracer: func(ctx context.Context, p logging.Perspective, ci quic.ConnectionID) logging.ConnectionTracer {
+		Tracer: func(ctx context.Context, p logging.Perspective, ci quic.ConnectionID) *logging.ConnectionTracer {
 			return qlog.NewConnectionTracer(&QlogWriter{connID: ci}, p, ci)
 		},
 	}
-	udpConn, _ := rawConn.(*net.UDPConn)
-	if udpConn == nil {
-		udpConn = rawConn.(*internet.PacketConnWrapper).Conn.(*net.UDPConn)
+
+	var udpConn *net.UDPConn
+	switch conn := rawConn.(type) {
+	case *net.UDPConn:
+		udpConn = conn
+	case *internet.PacketConnWrapper:
+		udpConn = conn.Conn.(*net.UDPConn)
+	default:
+		// TODO: Support sockopt for QUIC
+		rawConn.Close()
+		return nil, newError("QUIC with sockopt is unsupported").AtWarning()
 	}
+
 	sysConn, err := wrapSysConn(udpConn, config)
 	if err != nil {
 		rawConn.Close()
@@ -199,12 +208,21 @@ func Dial(ctx context.Context, dest net.Destination, streamSettings *internet.Me
 			IP:   dest.Address.IP(),
 			Port: int(dest.Port),
 		}
-	} else {
-		addr, err := net.ResolveUDPAddr("udp", dest.NetAddr())
-		if err != nil {
-			return nil, err
+	}  else {
+		dialerIp := internet.DestIpAddress()
+		if dialerIp != nil {
+			destAddr = &net.UDPAddr{
+				IP:   dialerIp,
+				Port: int(dest.Port),
+			}
+			newError("quic Dial use dialer dest addr: ", destAddr).WriteToLog()
+		} else {
+			addr, err := net.ResolveUDPAddr("udp", dest.NetAddr())
+			if err != nil {
+				return nil, err
+			}
+			destAddr = addr
 		}
-		destAddr = addr
 	}
 
 	config := streamSettings.ProtocolSettings.(*Config)
